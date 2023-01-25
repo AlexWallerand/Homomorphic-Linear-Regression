@@ -8,7 +8,7 @@ def init_theta(data):
     return np.zeros((data.shape[1], 1))
 
 def model(X, theta):
-    return test_matrice_mul(X, theta)
+    return matrice_mul(X, theta, HE)
 
 def cost_function(X, y, theta):
     m = len(y)
@@ -16,17 +16,19 @@ def cost_function(X, y, theta):
 
 def grad(X ,y, theta):
     m = len(y)
-    return test_matrice_scalar_mul(test_matrice_mul(test_matrice_transpose(X), test_matrice_sou(model(X, theta) , y)), 1/m)
+    ctxt_m = HE.encryptFrac(np.array([1/m], dtype=np.float64))
+    return matrice_scalar_mul(matrice_mul(matrice_transpose(X, HE), matrice_sou(model(X, theta) , y, HE), HE), ctxt_m, HE)
 
 def gradient_descent(X, y, theta, learning_rate, n_iteration):
+    ctxt_learning_rate = HE.encryptFrac(np.array([learning_rate], dtype=np.float64))
     for i in range(0, n_iteration):
-        theta = theta - learning_rate * grad(X, y, theta)
+        theta = theta - ctxt_learning_rate * grad(X, y, theta)
     return theta
 
 def regression(X, y):
     theta = init_theta(X)
-    cyphertext_theta = matrice_encrypt(theta)
-    theta_f = gradient_descent(X, y, theta, learning_rate=0.1, n_iteration=1000)
+    ctxt_theta = matrice_encrypt(theta, HE)
+    theta_f = gradient_descent(X, y, ctxt_theta, learning_rate=0.1, n_iteration=1000)
     return model(X, theta_f)
 
 def load_data(path, column1, column2):
@@ -43,19 +45,18 @@ def load_data(path, column1, column2):
 HE = Pyfhel()
 HE.contextGen(scheme="ckks", n=2**14, scale=2**30, qi_sizes=[60, 30, 30, 30, 60])
 HE.keyGen()
-HE.rotatekeyGen()
 
 # Récupération des données
 x, X, y = load_data('Car_sales.csv','Engine_size','Horsepower')
-plaintext_x = np.array(X, dtype=np.float64)
-plaintext_y = np.array(y, dtype=np.float64)
+ptxt_x = np.array(X, dtype=np.float64)
+ptxt_y = np.array(y, dtype=np.float64)
 
 # Encryption des données
-cyphertext_x = matrice_encrypt(plaintext_x)
-cyphertext_y = matrice_encrypt(plaintext_y)
+ctxt_x = matrice_encrypt(ptxt_x, HE)
+ctxt_y = matrice_encrypt(ptxt_y, HE)
 
 # Calcul de la régression cryptée
-regression = regression(cyphertext_x, cyphertext_y).tolist()
+regression = regression(ctxt_x, ctxt_y).tolist()
 
 """plt.scatter(x, y)
 plt.plot(x, regression, color='green')
