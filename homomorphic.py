@@ -15,20 +15,6 @@ def matrice_encrypt(mat, HE):
     res_mat = np.asarray(res_mat)
     return res_mat.reshape(lignes, colonnes)
 
-def matrice_encrypt_scale60(mat, HE):
-    '''
-    :param mat: doit être une matrice numpy de float
-    :return: matrice encryptée
-    '''
-    lignes, colonnes = mat.shape[0], mat.shape[1]
-    res_mat = []
-    for i in range(lignes):
-        val_ligne = []
-        for j in range(colonnes):
-            val_ligne.append(HE.encryptFrac(np.array([mat[i,j]], dtype=np.float64), scale=2**60))
-        res_mat.append(val_ligne)
-    res_mat = np.asarray(res_mat)
-    return res_mat.reshape(lignes, colonnes)
 
 def decrypt(enc_mat, HE):
     '''
