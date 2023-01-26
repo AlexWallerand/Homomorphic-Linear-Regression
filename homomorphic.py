@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def matrice_encrypt(mat, HE):
     '''
     :param mat: doit être une matrice numpy de float
@@ -10,7 +11,8 @@ def matrice_encrypt(mat, HE):
     for i in range(lignes):
         val_ligne = []
         for j in range(colonnes):
-            val_ligne.append(HE.encryptFrac(np.array([mat[i,j]], dtype=np.float64)))
+            val_ligne.append(HE.encryptFrac(
+                np.array([mat[i, j]], dtype=np.float64)))
         res_mat.append(val_ligne)
     res_mat = np.asarray(res_mat)
     return res_mat.reshape(lignes, colonnes)
@@ -42,7 +44,8 @@ def matrice_mul(ctxt1, ctxt2, HE):
     res = matrice_encrypt(np.zeros((lignes, colonnes)), HE)
     for i in range(lignes):
         for j in range(colonnes):
-            sum = HE.encryptFrac(np.array([0.0], dtype=np.float64), scale=2**60)
+            sum = HE.encryptFrac(
+                np.array([0.0], dtype=np.float64), scale=2**60)
             for k in range(ctxt1.shape[1]):
                 mul = ctxt1[i][k] * ctxt2[k][j]
                 print(sum)
@@ -51,18 +54,19 @@ def matrice_mul(ctxt1, ctxt2, HE):
             res[i][j] = sum
     return res
 
+
 def matrice_scalar_mul(self, ctxt1, enc_scalar):
-        '''
-        :param ctxt1: encrypted matrix, size (mxn)
-        :return: encrypted matrix, size (mxn)
-        '''
-        lignes, colonnes = ctxt1.shape[0], ctxt1.shape[1]
-        temp = np.zeros((lignes, colonnes))
-        res = matrice_encrypt(np.zeros((lignes, colonnes)))
-        for i in range(lignes):
-            for j in range(colonnes):
-                res[i][j] = enc_scalar*ctxt1[i][j]
-        return res
+    '''
+    :param ctxt1: encrypted matrix, size (mxn)
+    :return: encrypted matrix, size (mxn)
+    '''
+    lignes, colonnes = ctxt1.shape[0], ctxt1.shape[1]
+    temp = np.zeros((lignes, colonnes))
+    res = matrice_encrypt(np.zeros((lignes, colonnes)))
+    for i in range(lignes):
+        for j in range(colonnes):
+            res[i][j] = enc_scalar*ctxt1[i][j]
+    return res
 
 
 def matrice_sou(ctxt1, ctxt2, HE):
@@ -70,7 +74,7 @@ def matrice_sou(ctxt1, ctxt2, HE):
     :param ctxt1 & ctxt2: doivent être des matrices encryptées
     :return: la matrice encryptée de la soustraction entre ctxt1 & ctxt2
     '''
-    assert ctxt1.shape[0] == ctxt2.shape[0] and ctxt1.shape[1]==ctxt2.shape[1] 
+    assert ctxt1.shape[0] == ctxt2.shape[0] and ctxt1.shape[1] == ctxt2.shape[1]
     lignes, colonnes = ctxt1.shape[0], ctxt2.shape[1]
     res = matrice_encrypt(np.zeros((lignes, colonnes)), HE)
     for i in range(lignes):
@@ -84,7 +88,7 @@ def matrice_add(ctxt1, ctxt2):
     :param ctxt1 & ctxt2: doivent être des matrices encryptées
     :return: la matrice encryptée de la mutiplication entre ctxt1 & ctxt2
     '''
-    assert ctxt1.shape[0] == ctxt2.shape[0] and ctxt1.shape[1]==ctxt2.shape[1] 
+    assert ctxt1.shape[0] == ctxt2.shape[0] and ctxt1.shape[1] == ctxt2.shape[1]
     lignes, colonnes = ctxt1.shape[0], ctxt2.shape[1]
     res = matrice_encrypt(np.zeros((lignes, colonnes)))
     for i in range(lignes):
@@ -105,6 +109,7 @@ def matrice_sqrt(ctxt1):
             res[i][j] = ctxt1[i][j] * ctxt1[i][j]
     return res
 
+
 def matrice_transpose(ctxt, HE):
     '''
     :param ctxt: doit être une matrice encryptée
@@ -119,68 +124,47 @@ def matrice_transpose(ctxt, HE):
     return res
 
 
+################# TEST SANS ENCRYPTION #################
 
 
-###################### TEST ##########################
-
-def test_matrice_mul(ctxt1, ctxt2):
-    '''
-    :param ctxt1 & ctxt2: doivent être des matrices encryptées
-    :return: la matrice encryptée de la mutiplication entre ctxt1 & ctxt2
-    '''
-    assert ctxt1.shape[1] == ctxt2.shape[0]
-    lignes, colonnes = ctxt1.shape[0], ctxt2.shape[1]
-    #res = matrice_encrypt(np.zeros((lignes, colonnes)))
+def test_matrice_mul(mat1, mat2):
+    assert mat1.shape[1] == mat2.shape[0]
+    lignes, colonnes = mat1.shape[0], mat2.shape[1]
     res = np.zeros((lignes, colonnes))
     for i in range(lignes):
         for j in range(colonnes):
-            #sum = HE.encryptFrac(0)
             sum = 0
-            for k in range(ctxt1.shape[1]):
-                sum = sum + ctxt1[i][k] * ctxt2[k][j]
+            for k in range(mat1.shape[1]):
+                sum = sum + mat1[i][k] * mat2[k][j]
             res[i][j] = sum
     return res
 
 
-def test_matrice_sou(ctxt1, ctxt2):
-    '''
-    :param ctxt1 & ctxt2: doivent être des matrices encryptées
-    :return: la matrice encryptée de la soustraction entre ctxt1 & ctxt2
-    '''
-    assert ctxt1.shape[0] == ctxt2.shape[0] and ctxt1.shape[1]==ctxt2.shape[1] 
-    lignes, colonnes = ctxt1.shape[0], ctxt2.shape[1]
-    #res = matrice_encrypt(np.zeros((lignes, colonnes)))
+def test_matrice_sou(mat1, mat2):
+    assert mat1.shape[0] == mat2.shape[0] and mat1.shape[1] == mat2.shape[1]
+    lignes, colonnes = mat1.shape[0], mat2.shape[1]
     res = np.zeros((lignes, colonnes))
     for i in range(lignes):
         for j in range(colonnes):
-            res[i][j] = ctxt1[i][j] - ctxt2[i][j]
+            res[i][j] = mat1[i][j] - mat2[i][j]
     return res
 
-def test_matrice_scalar_mul(ctxt1, enc_scalar):
-    '''
-    :param ctxt1: doit être une matrice encryptée et enc_scalar un nombre encrypté
-    :return: la multiplication scalaire de la matrice encryptée avec enc_scalar
-    '''
-    lignes, colonnes = ctxt1.shape[0], ctxt1.shape[1]
+
+def test_matrice_scalar_mul(mat1, enc_scalar):
+    lignes, colonnes = mat1.shape[0], mat1.shape[1]
     #temp = np.zeros((lignes, colonnes))
     #res = self.encrypt(temp)
     res = np.zeros((lignes, colonnes))
     for i in range(lignes):
         for j in range(colonnes):
-            res[i][j] = enc_scalar*ctxt1[i][j]
+            res[i][j] = enc_scalar*mat1[i][j]
     return res
 
-def test_matrice_transpose(ctxt1):
-    '''
-    :param ctxt1: doit être une matrice encryptée
-    :return: la matrice encryptée transposée
-    '''
-    lignes, colonnes = ctxt1.shape[0], ctxt1.shape[1]
-    #temp = np.zeros((lignes, colonnes))
-    #res = self.encrypt(temp)
+
+def test_matrice_transpose(mat1):
+    lignes, colonnes = mat1.shape[0], mat1.shape[1]
     res = np.zeros((colonnes, lignes))
     for i in range(lignes):
         for j in range(colonnes):
-            res[j][i] = ctxt1[i][j]
+            res[j][i] = mat1[i][j]
     return res
-
