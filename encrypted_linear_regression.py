@@ -22,13 +22,14 @@ def grad(X ,y, theta):
 def gradient_descent(X, y, theta, learning_rate, n_iteration):
     ctxt_learning_rate = HE.encryptFrac(np.array([learning_rate], dtype=np.float64))
     for i in range(0, n_iteration):
-        theta = theta - ctxt_learning_rate * grad(X, y, theta)
+        print(i)
+        theta = matrice_sou(theta, matrice_scalar_mul(grad(X, y, theta), ctxt_learning_rate, HE), HE)
     return theta
 
 def regression(X, y):
     theta = init_theta(X)
     ctxt_theta = matrice_encrypt(theta, HE)
-    theta_f = gradient_descent(X, y, ctxt_theta, learning_rate=0.1, n_iteration=1000)
+    theta_f = gradient_descent(X, y, ctxt_theta, learning_rate=0.1, n_iteration=100)
     return model(X, theta_f)
 
 def load_data(path, column1, column2):
@@ -43,8 +44,11 @@ def load_data(path, column1, column2):
 
 # Initialisation du modèle d'encryption Pyfhel
 HE = Pyfhel()
-HE.contextGen(scheme="ckks", n=2**14, scale=2**30, qi_sizes=[60, 30, 30, 30, 60])
+qi_sizes = [60] + [30]*8 + [60]
+HE.contextGen(scheme="ckks", n=2**14, scale=2**30, qi_sizes=qi_sizes)
 HE.keyGen()
+HE.relinKeyGen()
+HE.rotateKeyGen()
 
 # Récupération des données
 x, X, y = load_data('Car_sales.csv','Engine_size','Horsepower')
