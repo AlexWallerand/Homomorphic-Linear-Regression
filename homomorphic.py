@@ -32,29 +32,6 @@ def decrypt(enc_mat, HE):
     return res_mat.reshape(lignes, colonnes)
 
 
-def matrice_mul1(ctxt1, ctxt2, HE):
-    '''
-    :param ctxt1 & ctxt2: doivent être des matrices encryptées
-    :return: la matrice encryptée de la mutiplication entre ctxt1 & ctxt2
-    '''
-    assert ctxt1.shape[1] == ctxt2.shape[0]
-    lignes, colonnes = ctxt1.shape[0], ctxt2.shape[1]
-    res = matrice_encrypt(np.zeros((lignes, colonnes)), HE)
-    for i in range(lignes):
-        for j in range(colonnes):
-            for k in range(ctxt1.shape[1]):
-                print(k)
-                mul = ~(ctxt1[i][k] * ctxt2[k][j])
-                print(sum)
-                print(mul)
-                mul.set_scale(2**30)
-                mul = ~mul
-                print(sum)
-                print(mul)
-                sum = sum + mul
-            res[i][j] = sum
-    return res
-
 def matrice_mul(ctxt1, ctxt2, HE):
     '''
     :param ctxt1 & ctxt2: doivent être des matrices encryptées
@@ -112,18 +89,6 @@ def matrice_add(ctxt1, ctxt2):
             res[i][j] = ctxt1[i][j] + ctxt2[i][j]
     return res
 
-
-def matrice_sqrt(ctxt1):
-    '''
-    :param ctxt1: doit être des matrices encryptées
-    :return: la matrice ctxt1 au carré
-    '''
-    lignes, colonnes = ctxt1.shape[0], ctxt1.shape[1]
-    res = matrice_encrypt(np.zeros((lignes, colonnes)))
-    for i in range(lignes):
-        for j in range(colonnes):
-            res[i][j] = ctxt1[i][j] * ctxt1[i][j]
-    return res
 
 def matrice_transpose(ctxt, HE):
     '''

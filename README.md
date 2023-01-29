@@ -1,8 +1,10 @@
 # INFO731-Homomorphic-Linear-Regression
 
-L'objectif de ce projet est de mesuer l'efficacité du calcul d'une régression linéaire effecuée sur des données encryptées homomorphiquement. Pour cela nous utiliserons la biblothèque python [Pyfhel](https://pyfhel.readthedocs.io/en/latest/index.html).
+L'objectif de ce projet est de mesuer l'efficacité du calcul d'une régression linéaire effecuée sur des données encryptées homomorphiquement. Pour cela nous utiliserons la biblothèque Python [Pyfhel](https://pyfhel.readthedocs.io/en/latest/index.html), basée elle même sur la librairie C++ [SEAL](https://github.com/microsoft/SEAL).
 
-<br>
+## Installation de l'environnement
+
+Ce projet nécessite l'installation de Pyfhel, qui nécessite lui même l'environnement de [SEAL](https://github.com/Huelse/SEAL-Python) adapté pour le langage Python. Pour cela, se réferrer aux documentations des deux librairies correspondantes. Dans notre cas, nous avons créé un container Docker depuis l'image de SEAL, dans lequel nous exécutons nos scripts avec Python et Pyfhel installé préalablement. 
 
 ## Régression linéaire classique
 
@@ -130,15 +132,18 @@ Tout fonctionne correctement nous pouvons passer à la partie d'encryption.
 ## Régression linéaire encryptée
 
 Nous arrivons maintenant à la partie crutiale du projet, la partie d'encryption.
-Nous commençons tout d'abord par initialiser le modèle d'encryption de Pyfhel. Ce modèle sera utilisé à chaque fois qu'il sera nécessaire de chiffrer et déchiffrer une donnée puisque qu'il contient la clé privée et publique.
+Nous commençons tout d'abord par initialiser le modèle d'encryption de Pyfhel. Ce modèle sera utilisé à chaque fois qu'il sera nécessaire de chiffrer et déchiffrer une donnée puisque qu'il contient la clé privée et publique. Nous l'initialisons avec le schéma CKKS, qui permet de crypter des valeurs flottantes contrairement au schéma BFV. Puis nous définissons une échelle de 2**30, ce qui nous autorise au maximum 10 multiplications sur une donnée cryptée. Sont ensuite générés les clés de relinéarisation et de rotation, qui nous permettent par la suite de pouvoir utiliser des opérations indispensables.
 
 ```py
 HE = Pyfhel()
-HE.contextGen(scheme="ckks", n=2**14, scale=2**30, qi_sizes=[60, 30, 30, 30, 60])
+qi_sizes = [60] + [30]*10 + [60]
+HE.contextGen(scheme="ckks", n=2**14, scale=2**30, qi_sizes=qi_sizes)
 HE.keyGen()
+HE.relinKeyGen()
+HE.rotateKeyGen()
 ```
 
-Nous créons ensuire un fonction pour encrypter une matrice et un fonction pour la décrypter. La fonction d'encryption parcoure les élements de la matrice et les encrypte un par un avec la fonction de Pyfhel permettant le cryptage d'un float.
+Nous créons ensuite une fonction pour encrypter une matrice et une fonction pour la décrypter. La fonction d'encryption parcoure les élements de la matrice et les encrypte un par un avec la fonction de Pyfhel permettant le cryptage d'un float.
 
 ```py
 def matrice_encrypt(mat, HE):
@@ -173,3 +178,37 @@ def decrypt(enc_mat, HE):
     res_mat = np.asarray(res_mat)
     return res_mat.reshape(lignes, colonnes)
 ```
+
+Puis, il faut maintenant créer les fonctions permettant les calculs élémentaires entre matrices. Pour cela, il faut passer en paramètre de chacune de ces fonctions le modèle Pyfhel *HE*, afin de pouvoir opérer sur les propriétés des données cryptées. Elles sont pour la plupart triviales, sauf pour la multiplication. En effet, il faut rélinéariser chaque multiplication avec l'opérateur ~, et la somme se fait à l'aide de la méthode *cumul_add*.
+
+```py
+def matrice_mul(ctxt1, ctxt2, HE):
+    '''
+    :param ctxt1 & ctxt2: doivent être des matrices encryptées
+    :return: la matrice encryptée de la mutiplication entre ctxt1 & ctxt2
+    '''
+    assert ctxt1.shape[1] == ctxt2.shape[0]
+    lignes, colonnes = ctxt1.shape[0], ctxt2.shape[1]
+    res = matrice_encrypt(np.zeros((lignes, colonnes)), HE)
+    for i in range(lignes):
+        for j in range(colonnes):
+            mul_res = [~(ctxt1[i][k] * ctxt2[k][j]) for k in range(ctxt1.shape[1])]
+            for k in range(len(mul_res)):
+                mul_res[0] += mul_res[k]
+            res[i][j] = HE.cumul_add(mul_res[0])
+    return res
+```
+
+Maintenant que toutes les fonctions de bases sont codées, il ne reste plus qu'à adapter les fonctions de descente de gradient avec des données cryptées. Pour cela, on remplace les opérations de base par les opérations de matrices développés ci-dessus.
+
+## Résultats obtenus
+
+Les résultats obtenus suite à l'exécution du script homomorphique sont les suivants : <p align="center"><img src="src\resultat.png" width="500"/></p>
+
+Nous avons fait ce test sur les 10 premières données du dataset. On observe que la courbe obtenue est bien loin des valeurs réelles, et des résultats obtenus dans les essais classiques précédent. Ceci peut s'expliquer par le fait que notre descente de gradient ne peut se faire seulement que sur 2 itérations, à cause du nombre de multipications limité à 10 sur chaque cyphertext. De plus, il faut prendre en compte les incertitudes inhérentes au modèle CKKS, qui augmente plus on effectue des calculs sur la donnée.
+En ce qui concerne le temps d'exécutiion, il faut compter environ 4 minutes pour l'ensemble du dataset, alors qu'avec l'algorithme classisque il ne fallait que quelques secondes.
+Nous pensons donc ne pas avoir d'erreurs de calcul lors du calcul homoprhique. La solution serait de trouver le bon paramétrage de la descente de gradient en fonction du contexte défini pour le modèle homomorphique.
+
+## Conclusion
+
+Le calcul homomorphique nous semble être une technologie de demain, tant son intérêt en terme de protection de la donnée semble être important. Cependant, le temps de calcul et les erreurs ajoutés aux données sont les principals freins de ce modèle. Nous n'avons pas forcément non plus choisi l'environnement de développement le plus optimal. En effet, étant tous sur des systèmes d'exploitation différents, nous avons choisi d'utiliser la version conteneurisée de SEAL, pour pouvoir utiliser Pyfhel. Ainsi, il y a forcément une perte en performance du fait que le script soit exécuté via un conteneur Docker. Finalement, il aurait été plus judicieux de développer directement en C++ avec la librairie native SEAL pour améliorer l'efficacité du script.
