@@ -131,8 +131,8 @@ Tout fonctionne correctement nous pouvons passer à la partie d'encryption.
 
 ## Régression linéaire encryptée
 
-Nous arrivons maintenant à la partie crutiale du projet, la partie d'encryption.
-Nous commençons tout d'abord par initialiser le modèle d'encryption de Pyfhel. Ce modèle sera utilisé à chaque fois qu'il sera nécessaire de chiffrer et déchiffrer une donnée puisque qu'il contient la clé privée et publique. Nous l'initialisons avec le schéma CKKS, qui permet de crypter des valeurs flottantes contrairement au schéma BFV. Puis nous définissons une échelle de 2**30, ce qui nous autorise au maximum 10 multiplications sur une donnée cryptée. Sont ensuite générés les clés de relinéarisation et de rotation, qui nous permettent par la suite de pouvoir utiliser des opérations indispensables.
+Nous arrivons maintenant à la partie cruciale du projet, la partie d'encryption.
+Nous commençons tout d'abord par initialiser le modèle d'encryption de Pyfhel. Ce modèle sera utilisé à chaque fois qu'il sera nécessaire de chiffrer et de déchiffrer une donnée puisque qu'il contient la clé privée et publique. Nous l'initialisons avec le schéma CKKS, qui permet de crypter des valeurs flottantes contrairement au schéma BFV. Puis nous définissons une échelle de 2**30, ce qui nous autorise au maximum 10 multiplications sur une donnée cryptée. Sont ensuite générées les clés de relinéarisation et de rotation, qui nous permettent par la suite de pouvoir utiliser des opérations indispensables.
 
 ```py
 HE = Pyfhel()
@@ -143,7 +143,7 @@ HE.relinKeyGen()
 HE.rotateKeyGen()
 ```
 
-Nous créons ensuite une fonction pour encrypter une matrice et une fonction pour la décrypter. La fonction d'encryption parcoure les élements de la matrice et les encrypte un par un avec la fonction de Pyfhel permettant le cryptage d'un float.
+Nous créons ensuite une fonction pour encrypter une matrice et une fonction pour la décrypter. La fonction d'encryption parcoure les éléments de la matrice et les encrypte un par un avec la fonction de Pyfhel permettant le cryptage d'un float.
 
 ```py
 def matrice_encrypt(mat, HE):
@@ -199,16 +199,16 @@ def matrice_mul(ctxt1, ctxt2, HE):
     return res
 ```
 
-Maintenant que toutes les fonctions de bases sont codées, il ne reste plus qu'à adapter les fonctions de descente de gradient avec des données cryptées. Pour cela, on remplace les opérations de base par les opérations de matrices développés ci-dessus.
+Maintenant que toutes les fonctions de bases sont codées, il ne reste plus qu'à adapter les fonctions de descente de gradient avec des données cryptées. Pour cela, on remplace les opérations de base par les opérations de matrices développées ci-dessus.
 
 ## Résultats obtenus
 
 Les résultats obtenus suite à l'exécution du script homomorphique sont les suivants : <p align="center"><img src="src\resultat.png" width="500"/></p>
 
-Nous avons fait ce test sur les 10 premières données du dataset. On observe que la courbe obtenue est bien loin des valeurs réelles, et des résultats obtenus dans les essais classiques précédent. Ceci peut s'expliquer par le fait que notre descente de gradient ne peut se faire seulement que sur 2 itérations, à cause du nombre de multipications limité à 10 sur chaque cyphertext. De plus, il faut prendre en compte les incertitudes inhérentes au modèle CKKS, qui augmente plus on effectue des calculs sur la donnée.
-En ce qui concerne le temps d'exécutiion, il faut compter environ 4 minutes pour l'ensemble du dataset, alors qu'avec l'algorithme classisque il ne fallait que quelques secondes.
+Nous avons fait ce test sur les 10 premières données du dataset. On observe que la courbe obtenue est bien loin des valeurs réelles, et des résultats obtenus dans les essais classiques précédent. Ceci peut s'expliquer par le fait que notre descente de gradient ne peut se faire seulement que sur 2 itérations, à cause du nombre de multiplications limité à 10 sur chaque cyphertext. De plus, il faut prendre en compte les incertitudes inhérentes au modèle CKKS, qui augmente plus on effectue des calculs sur la donnée.
+En ce qui concerne le temps d'exécution, il faut compter environ 4 minutes pour l'ensemble du dataset, alors qu'avec l'algorithme classique il ne fallait que quelques secondes.
 Nous pensons donc ne pas avoir d'erreurs de calcul lors du calcul homoprhique. La solution serait de trouver le bon paramétrage de la descente de gradient en fonction du contexte défini pour le modèle homomorphique.
 
 ## Conclusion
 
-Le calcul homomorphique nous semble être une technologie de demain, tant son intérêt en terme de protection de la donnée semble être important. Cependant, le temps de calcul et les erreurs ajoutés aux données sont les principals freins de ce modèle. Nous n'avons pas forcément non plus choisi l'environnement de développement le plus optimal. En effet, étant tous sur des systèmes d'exploitation différents, nous avons choisi d'utiliser la version conteneurisée de SEAL, pour pouvoir utiliser Pyfhel. Ainsi, il y a forcément une perte en performance du fait que le script soit exécuté via un conteneur Docker. Finalement, il aurait été plus judicieux de développer directement en C++ avec la librairie native SEAL pour améliorer l'efficacité du script.
+Le calcul homomorphique nous semble être une technologie de demain, tant son intérêt en termes de protection de la donnée semble être important. Cependant, le temps de calcul et les erreurs ajoutés aux données sont les principaux freins de ce modèle. Nous n'avons pas forcément non plus choisi l'environnement de développement le plus optimal. En effet, étant tous sur des systèmes d'exploitation différents, nous avons choisi d'utiliser la version conteneurisée de SEAL, pour pouvoir utiliser Pyfhel. Ainsi, il y a forcément une perte en performance du fait que le script soit exécuté via un conteneur Docker. Finalement, il aurait été plus judicieux de développer directement en C++ avec la librairie native SEAL pour améliorer l'efficacité du script.
